@@ -68,6 +68,9 @@ public class ValidationItemControllerV1 {
         if (!errors.isEmpty()) { //에러가 비어있지 않으면 (에러가 존재하면)
             log.info("errors = {}", errors);
             model.addAttribute("errors", errors);
+            /**
+             * @ModelAttribute에 의해 이미 받아온 값을 다시 넘겨준다!
+             */
             return "validation/v1/addForm";
         }
 
