@@ -45,6 +45,63 @@ public class ValidationItemControllerV2 {
     }
 
     @PostMapping("/add")
+    public String addItemV2(@ModelAttribute Item item, BindingResult bindingResult,
+                          RedirectAttributes redirectAttributes, Model model) {
+        //검증 로직
+        if (!StringUtils.hasText(item.getItemName())) {
+            bindingResult.addError(
+//                    new FieldError("item","itemName", "상품 이름은 필수입니다."));
+                    /**
+                     * 타임리프에서는 정상적인 상황에서는 Model객체의 값을 읽지만, BindingResult를 통해 Error발생시 Model로부터 값을 읽지 않고
+                     * FieldError에서 rejectedValue에 보관한 값을 사용해서 값을 추출한다.
+                     * rejectedValue - 거절된값 : item.getItemName()
+                     * bindingFailure - 데이터 바인딩실패 : false (데이터자체는 제대로 들어왔으므로)
+                     * code : null
+                     * arguments : null
+                     */
+                    new FieldError("item","itemName", item.getItemName(), false, null, null, "상품 이름은 필수입니다."));
+        }
+        if (item.getPrice() == null || item.getPrice() < 1000 || item.getPrice() > 1000000) {
+//            bindingResult.addError(new FieldError("item", "price", "가격은 1,000원 에서 1,000,000원 까지 허용합니다."));
+            bindingResult.addError(
+                    new FieldError("item", "price", item.getPrice(), false,
+                            null, null, "가격은 1,000원 에서 1,000,000원 까지 허용합니다.")
+            );
+        }
+        if (item.getQuantity() == null || item.getQuantity() > 9999) {
+//            bindingResult.addError(new FieldError("item", "quantity", "수량은 최대 9,999 까지 허용합니다."));
+            bindingResult.addError(new FieldError("item", "quantity", item.getQuantity(), false,
+                    null, null, "수량은 최대 9,999 까지 허용합니다."));
+        }
+        // 특정 필드가 아닌 복합 검증
+        if (item.getPrice() != null && item.getQuantity() != null) { //금액과 수량 모두 null이 아닌경우
+            int resultPrice = item.getPrice() * item.getQuantity();
+            if (resultPrice < 10000) { // 10000원 미만일 경우
+                bindingResult.addError(
+                        /**
+                         * codes : null
+                         * arguments : null
+                         */
+                        new ObjectError("item", null, null,
+                                "가격 * 수량의 합은 10,000원 이상이어야 합니다. 현재값 = " + resultPrice));
+            }
+        }
+        //검증에 실패하면 다시 입력 폼으로
+        if (bindingResult.hasErrors()) { //에러가 비어있지 않으면 (에러가 존재하면)
+            log.info("bindingResult = {}", bindingResult);
+            /**
+             * bindingResult는 자동으로 view에 넘어가는 모델 역할을 한다.
+             */
+            return "validation/v2/addForm";
+        }
+
+        //성공 로직
+        Item savedItem = itemRepository.save(item);
+        redirectAttributes.addAttribute("itemId", savedItem.getId());
+        redirectAttributes.addAttribute("status", true);
+        return "redirect:/validation/v2/items/{itemId}";
+    }
+//    @PostMapping("/add")
     public String addItemV1(@ModelAttribute Item item, BindingResult bindingResult,
                           /*
                           * BindingResult
@@ -52,13 +109,10 @@ public class ValidationItemControllerV2 {
                           * item의 바인딩 결과가 담긴다. error를 담는 역할을 해준다. (bindingResult는 자동으로 view에 넘어가는 모델 역할을 한다.)
                           * */
                           RedirectAttributes redirectAttributes, Model model) {
-
-
         //검증 로직
         if (!StringUtils.hasText(item.getItemName())) { //넘어온 상품명 글자가 없으면
             bindingResult.addError(//FieldError : 필드단위 에러를 저장하는 객체 (오브젝트명, 필드명, 오류메시지)
                     new FieldError("item","itemName", "상품 이름은 필수입니다."));
-
         }
         if (item.getPrice() == null || item.getPrice() < 1000 || item.getPrice() > 1000000) { //금액이 null 혹은 1000미만 혹은 100만원을 초과할경우
             bindingResult.addError(new FieldError("item", "price", "가격은 1,000원 에서 1,000,000원 까지 허용합니다."));
@@ -82,7 +136,6 @@ public class ValidationItemControllerV2 {
              */
             return "validation/v2/addForm";
         }
-
         //성공 로직
         Item savedItem = itemRepository.save(item);
         redirectAttributes.addAttribute("itemId", savedItem.getId());
