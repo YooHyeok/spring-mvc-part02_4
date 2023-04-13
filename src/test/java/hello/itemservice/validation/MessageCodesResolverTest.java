@@ -7,6 +7,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.validation.MessageCodesResolver;
 import org.springframework.validation.ObjectError;
 
+import static org.assertj.core.api.Assertions.*;
+
 public class MessageCodesResolverTest {
     /**
      * MessageCodesResolver
@@ -17,7 +19,6 @@ public class MessageCodesResolverTest {
     MessageCodesResolver codesResolver = new DefaultMessageCodesResolver();
 
     /**
-     * resolveMessageCodes()
      * 메시지 코드 추출 테스트 1 - ObjectError
      */
     @Test
@@ -26,7 +27,27 @@ public class MessageCodesResolverTest {
         for (String messageCode : messageCodes) {
             System.out.println("messageCode = " + messageCode); // [required.item, required]
         }
-//        new ObjectError("item", new String[]{"required.item", "required"});
-        Assertions.assertThat(messageCodes).containsExactly("required.item", "required"); // containsExactly : 순서를 포함하여 원소값과 갯수가 정확히 일치
+        // new ObjectError("item", new String[]{"required.item", "required"});
+        assertThat(messageCodes).containsExactly("required.item", "required"); // containsExactly : 순서를 포함하여 원소값과 갯수가 정확히 일치
     }
+
+    /**
+     * 메시지 코드 추출 테스트 2 - FieldError
+     */
+    @Test
+    void messageCodesResolverField() {
+        String[] messageCodes = codesResolver.resolveMessageCodes("required", "item", "itemName", String.class);
+        for (String messageCode : messageCodes) {
+            System.out.println("messageCode = " + messageCode);
+        }
+        // bindingResult.rejectValue("itemName", "required"); //rejectValue 내부적으로 codesResolver를 호출하여 아래의 FieldError 작업
+        // new FieldError("item", "itemName", null, false, messageCodes, null, null);
+        assertThat(messageCodes).containsExactly(
+        "required.item.itemName",
+                "required.itemName",
+                "required.java.lang.String",
+                "required"
+        );
+    }
+
 }
