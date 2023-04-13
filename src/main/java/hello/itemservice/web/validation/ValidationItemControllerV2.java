@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
+import org.springframework.validation.ValidationUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -49,6 +50,16 @@ public class ValidationItemControllerV2 {
                             RedirectAttributes redirectAttributes, Model model) {
         log.info("objectName={}", bindingResult.getObjectName());
         log.info("target={}", bindingResult.getTarget());
+
+        /**
+         * StringUtils로 item으로부터 itemName값이 존재하지 않으면 검증하던 로직을
+         * ValidationUtils를 활용하여 아래와 같이 한줄로 처리할 수 있다.
+         * ValidationUtils.rejectIfEmptyOrWhitespace(bindingResult, "itemName", "required");
+         * 혹은
+         * ValidationUtils.rejectIfEmpty(bindingResult, "itemName", "required");
+         * rejectIfEmpty : itemName의 값이 null일 경우 bindingResult를 활용하여 rejectValue생성
+         * rejectEmptyOrWhitespace : itemName의 값이 공백이거나 null일경우 bindingResult를 활용하여  rejectValue생성
+         */
         //검증 로직
         if (!StringUtils.hasText(item.getItemName())) {
 //            bindingResult.addError(new FieldError("item","itemName", "상품 이름은 필수입니다."));
